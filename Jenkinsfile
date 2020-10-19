@@ -13,6 +13,7 @@ pipeline {
     stage('Package') {
       steps {
         echo 'build and push docker to ecr'
+        sh 'docker build -f src/main/docker/Dockerfile.jvm -t aaronwalker/greeter .'
       }
     }
     stage('Deploy') {
