@@ -1,0 +1,15 @@
+version: 0.2
+
+phases:
+  pre_build:
+    commands:
+      - echo Build codebutler image
+      - docker build -t codebutler -f Dockerfile.codebuild .
+  build:
+    commands:
+      - echo Build started on `date`
+      - echo running jenkins pipeline...
+      - docker run --rm -v $(pwd):/workspace codebutler
+  post_build:
+    commands:
+      - echo Build completed on `date`
