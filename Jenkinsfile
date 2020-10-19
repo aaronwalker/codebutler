@@ -17,8 +17,14 @@ pipeline {
       }
     }
     stage('Deploy') {
+      agent {
+        docker {
+          image 'theonestack/cfhighlander'
+        }
+      }
       steps {
         echo "cloudformation deploy using IAM role"
+        echo "cfhighlander -v"
       }
     }
   }
