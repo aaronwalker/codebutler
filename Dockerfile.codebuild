@@ -1,0 +1,14 @@
+FROM jenkins4eval/jenkinsfile-runner:maven
+
+# Installing basic packages
+RUN apt-get update && \
+  apt-get install -y zip unzip curl && \
+  rm -rf /var/lib/apt/lists/* && \
+  rm -rf /tmp/*
+
+RUN curl -s "https://get.sdkman.io" | bash
+
+RUN bash -c "source $HOME/.sdkman/bin/sdkman-init.sh && \
+    yes | sdk install java && \
+    rm -rf $HOME/.sdkman/archives/* && \
+    rm -rf $HOME/.sdkman/tmp/*"
