@@ -8,7 +8,7 @@ phases:
   build:
     commands:
       - echo Build started on `date`
-      - echo running jenkins pipeline...
+      - echo RUNNING jenkins pipeline...YES you heard me right!!!!!!!!!
       - docker run --rm -v $(pwd):/workspace -v /var/run/docker.sock:/var/run/docker.sock codebutler
   post_build:
     commands:
