@@ -2,7 +2,7 @@ FROM jenkins4eval/jenkinsfile-runner:maven
 
 # Installing basic packages
 RUN apt-get update && \
-  apt-get install -y zip unzip curl docker-ce docker-ce-cli && \
+  apt-get install -y zip unzip curl docker.io && \
   rm -rf /var/lib/apt/lists/* && \
   rm -rf /tmp/*
 
