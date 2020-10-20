@@ -1,5 +1,5 @@
 // @Library(['github.com/base2Services/ciinabox-pipelines']) _
-library identifier: 'ciinabox@ecr-no-grab',
+library identifier: 'ciinabox@master',
     retriever: modernSCM([
       $class: 'GitSCMSource',
       remote: 'https://github.com/base2Services/ciinabox-pipelines.git'
