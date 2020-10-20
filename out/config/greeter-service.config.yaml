@@ -1,0 +1,28 @@
+---
+task_type: FARGATE
+network_mode: awsvpc
+cpu: 256
+memory: 512
+iam_policies:
+  fargate_default_policy:
+    action:
+    - logs:GetLogEvents
+    resource:
+    - Fn::GetAtt:
+      - LogGroup
+      - Arn
+:platform_version: 1.4.0
+:cpu: 1024
+:memory: 2048
+:task_definition:
+  :greeter:
+    :repo: repo
+    :image: nginx
+    :tag_param: GreeterVersion
+nested_component: true
+component_version: latest
+component_name: greeter-service
+template_name: fargate-v2
+template_version: latest
+template_dir: "/Users/aaronwalker/.cfhighlander/components/fargate-v2/latest"
+description: greeter-service - vlatest (fargate-v2@latest)

@@ -1,0 +1,7 @@
+---
+component_version: latest
+component_name: greeter
+template_name: greeter
+template_version: latest
+template_dir: "/Users/aaronwalker/Workspaces/aaronwalker/codebutler"
+description: Greeter Service - (greeter@latest)

@@ -1,4 +1,3 @@
-// @Library(['github.com/base2Services/ciinabox-pipelines']) _
 library identifier: 'ciinabox@master',
     retriever: modernSCM([
       $class: 'GitSCMSource',
@@ -36,7 +35,8 @@ pipeline {
       }
       steps {
         echo "cloudformation deploy using IAM role"
-        echo "cfhighlander -v"
+        echo "cfcompile greeter -q --validate"
+        echo "cfpublish greeter@${env.BUILD_NUMBER}"
       }
     }
   }

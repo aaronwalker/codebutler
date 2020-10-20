@@ -1,0 +1,94 @@
+---
+fargate_only_cluster: false
+ecs_agent_config:
+  ECS_AWSVPC_BLOCK_IMDS: true
+iam_policies:
+  ecs-container-instance:
+    action:
+    - ecs:CreateCluster
+    - ecs:DeregisterContainerInstance
+    - ecs:DiscoverPollEndpoint
+    - ecs:Poll
+    - ecs:RegisterContainerInstance
+    - ecs:StartTelemetrySession
+    - ecs:Submit*
+    - ecr:GetAuthorizationToken
+    - ecr:BatchCheckLayerAvailability
+    - ecr:GetDownloadUrlForLayer
+    - ecr:BatchGetImage
+    - logs:CreateLogStream
+    - logs:PutLogEvents
+  ecs-service-scheduler:
+    action:
+    - ec2:AuthorizeSecurityGroupIngress
+    - ec2:Describe*
+    - elasticloadbalancing:DeregisterInstancesFromLoadBalancer
+    - elasticloadbalancing:DeregisterTargets
+    - elasticloadbalancing:Describe*
+    - elasticloadbalancing:RegisterInstancesWithLoadBalancer
+    - elasticloadbalancing:RegisterTargets
+dain_hook_iam_policies:
+  ec2:
+    action:
+    - ec2:DescribeInstances
+    - ec2:DescribeInstanceAttribute
+    - ec2:DescribeInstanceStatus
+    - ec2:DescribeHosts
+  autoscaling:
+    action:
+    - autoscaling:CompleteLifecycleAction
+    resource:
+    - Fn::Sub: aws:aws:autoscaling:${AWS::Region}:${AWS::AccountId}:autoScalingGroup:*:autoScalingGroupName/${AutoScaleGroup}
+  ecs1:
+    action:
+    - ecs:DescribeContainerInstances
+    - ecs:DescribeTasks
+  ecs2:
+    action:
+    - ecs:ListContainerInstances
+    - ecs:SubmitContainerStateChange
+    - ecs:SubmitTaskStateChange
+    resource:
+    - Fn::GetAtt:
+      - EcsCluster
+      - Arn
+  ecs3:
+    action:
+    - ecs:UpdateContainerInstancesState
+    - ecs:ListTasks
+    condition:
+      ArnEquals:
+        ecs:cluster:
+          Fn::GetAtt:
+          - EcsCluster
+          - Arn
+dain_hook_topic_iam_policies:
+  sns:
+    action:
+    - sns:Publish
+    resource:
+    - Ref: DrainECSHookTopic
+ecs_scaling_iam_policies:
+  ecs1:
+    action:
+    - ecs:DescribeContainerInstances
+    - ecs:DescribeTasks
+  ecs2:
+    action:
+    - ecs:ListContainerInstances
+    resource:
+    - Fn::GetAtt:
+      - EcsCluster
+      - Arn
+  metrics:
+    action:
+    - cloudwatch:PutMetricData
+:cluster_name: "${EnvironmentName}-services"
+:fargate_only_cluster: true
+nested_component: true
+component_version: latest
+component_name: ecs
+template_name: ecs-v2
+template_version: 0.2.0
+template_dir: "/Users/aaronwalker/.cfhighlander/components/ecs-v2/0.2.0"
+description: ecs-v2 - latest

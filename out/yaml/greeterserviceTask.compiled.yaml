@@ -1,0 +1,122 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Resources:
+  LogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName:
+        Ref: AWS::StackName
+      RetentionInDays: '7'
+  TaskRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - ecs-tasks.amazonaws.com
+          Action:
+          - sts:AssumeRole
+        - Effect: Allow
+          Principal:
+            Service:
+            - ssm.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: "/"
+      Policies:
+      - PolicyName: fargate_default_policy
+        PolicyDocument:
+          Statement:
+          - Sid: fargatedefaultpolicy
+            Action:
+            - logs:GetLogEvents
+            Resource:
+            - Fn::GetAtt:
+              - LogGroup
+              - Arn
+            Effect: Allow
+  ExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: ecs-tasks.amazonaws.com
+          Action: sts:AssumeRole
+        - Effect: Allow
+          Principal:
+            Service: ssm.amazonaws.com
+          Action: sts:AssumeRole
+      Path: "/"
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+  Task:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      ContainerDefinitions:
+      - Name: greeter
+        Image:
+          Fn::Join:
+          - ''
+          - - ''
+            - greeter
+            - ":"
+            - latest
+        LogConfiguration:
+          LogDriver: awslogs
+          Options:
+            awslogs-group:
+              Ref: LogGroup
+            awslogs-region:
+              Ref: AWS::Region
+            awslogs-stream-prefix: greeter
+      RequiresCompatibilities:
+      - FARGATE
+      Cpu: 1024
+      Memory: 2048
+      NetworkMode: awsvpc
+      TaskRoleArn:
+        Ref: TaskRole
+      ExecutionRoleArn:
+        Ref: ExecutionRole
+      Tags:
+      - Key: Name
+        Value: greeterserviceTask
+      - Key: Environment
+        Value:
+          Ref: EnvironmentName
+      - Key: EnvironmentType
+        Value:
+          Ref: EnvironmentType
+Outputs:
+  EcsTaskArn:
+    Value:
+      Ref: Task
+    Export:
+      Name:
+        Fn::Sub: "${EnvironmentName}-greeterserviceTask-EcsTaskArn"
+  CfTemplateUrl:
+    Value: "/ecs-task.compiled.yaml"
+  CfTemplateVersion:
+    Value: latest
+Parameters:
+  EnvironmentName:
+    Type: String
+    Default: dev
+    NoEcho: false
+  EnvironmentType:
+    Type: String
+    Default: development
+    NoEcho: false
+    AllowedValues:
+    - development
+    - production
+  DnsDomain:
+    Type: String
+    Default: '{"Ref"=>"DnsDomain"}'
+    NoEcho: false
+Description: ecs-task - greeterserviceTask - latest

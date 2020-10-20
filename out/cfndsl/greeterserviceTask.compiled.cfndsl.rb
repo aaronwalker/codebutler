@@ -1,0 +1,309 @@
+
+    load('/Users/aaronwalker/.chefdk/gem/ruby/2.5.0/gems/cfhighlander-0.12.1/lib/../cfndsl_ext/iam_helper.rb')
+
+    load('/Users/aaronwalker/.chefdk/gem/ruby/2.5.0/gems/cfhighlander-0.12.1/lib/../cfndsl_ext/lambda_helper.rb')
+
+CloudFormation do
+  # cfhl meta: cfndsl_version=1.0.2
+  task_type = external_parameters.fetch(:task_type, nil)
+  network_mode = external_parameters.fetch(:network_mode, nil)
+  cpu = external_parameters.fetch(:cpu, nil)
+  memory = external_parameters.fetch(:memory, nil)
+  iam_policies = external_parameters.fetch(:iam_policies, nil)
+  platform_version = external_parameters.fetch(:platform_version, nil)
+  cpu = external_parameters.fetch(:cpu, nil)
+  memory = external_parameters.fetch(:memory, nil)
+  task_definition = external_parameters.fetch(:task_definition, nil)
+  nested_component = external_parameters.fetch(:nested_component, nil)
+  component_version = external_parameters.fetch(:component_version, nil)
+  component_name = external_parameters.fetch(:component_name, nil)
+  template_name = external_parameters.fetch(:template_name, nil)
+  template_version = external_parameters.fetch(:template_version, nil)
+  template_dir = external_parameters.fetch(:template_dir, nil)
+  description = external_parameters.fetch(:description, nil)
+
+  # render subcomponents
+
+
+
+			    export = external_parameters.fetch(:export_name, external_parameters[:component_name])
+			
+			    task_tags = []
+			    task_tags << { Key: "Name", Value: external_parameters[:component_name] }
+			    task_tags << { Key: "Environment", Value: Ref("EnvironmentName") }
+			    task_tags << { Key: "EnvironmentType", Value: Ref("EnvironmentType") }
+			
+			    tags = external_parameters.fetch(:tags, [])
+			    tags.each do |key,value|
+			      task_tags << { Key: key, Value: value }
+			    end
+			
+			    log_retention = external_parameters.fetch(:log_retention, 7)
+			    Logs_LogGroup('LogGroup') {
+			      LogGroupName Ref('AWS::StackName')
+			      RetentionInDays "#{log_retention}"
+			    }
+			
+			    definitions, task_volumes, secrets, secrets_policy = Array.new(4){[]}
+			
+			    task_definition = external_parameters.fetch(:task_definition, {})
+			    task_definition.each do |task_name, task|
+			
+			      env_vars, mount_points, ports = Array.new(3){[]}
+			
+			      name = task.has_key?('name') ? task['name'] : task_name
+			
+			      image_repo = task.has_key?('repo') ? "#{task['repo']}/" : ''
+			      image_name = task.has_key?('image') ? task['image'] : task_name
+			      image_tag = task.has_key?('tag') ? "#{task['tag']}" : 'latest'
+			      image_tag = task.has_key?('tag_param') ? Ref("#{task['tag_param']}") : image_tag
+			
+			      # create main definition
+			      task_def =  {
+			        Name: name,
+			        Image: FnJoin('',[ image_repo, image_name, ":", image_tag ]),
+			        LogConfiguration: {
+			          LogDriver: 'awslogs',
+			          Options: {
+			            'awslogs-group' => Ref("LogGroup"),
+			            "awslogs-region" => Ref("AWS::Region"),
+			            "awslogs-stream-prefix" => name
+			          }
+			        }
+			      }
+			
+			      task_def.merge!({ MemoryReservation: task['memory'] }) if task.has_key?('memory')
+			      task_def.merge!({ Cpu: task['cpu'] }) if task.has_key?('cpu')
+			
+			      task_def.merge!({ Ulimits: task['ulimits'] }) if task.has_key?('ulimits')
+			
+			
+			      if !(task['env_vars'].nil?)
+			        task['env_vars'].each do |name,value|
+			          split_value = value.to_s.split(/\${|}/)
+			          if split_value.include? 'environment'
+			            fn_join = split_value.map { |x| x == 'environment' ? [ Ref('EnvironmentName'), '.', FnFindInMap('AccountId',Ref('AWS::AccountId'),'DnsDomain') ] : x }
+			            env_value = FnJoin('', fn_join.flatten)
+			          elsif value == 'cf_version'
+			            env_value = cf_version
+			          else
+			            env_value = value
+			          end
+			          env_vars << { Name: name, Value: env_value}
+			        end
+			      end
+			
+			      task_def.merge!({Environment: env_vars }) if env_vars.any?
+			
+			      # add links
+			      if task.key?('links')
+			        task['links'].each do |links|
+			        task_def.merge!({ Links: [ links ] })
+			        end
+			      end
+			
+			      # add entrypoint
+			      if task.key?('entrypoint')
+			        task['entrypoint'].each do |entrypoint|
+			        task_def.merge!({ EntryPoint: entrypoint })
+			        end
+			      end
+			
+			      # By default Essential is true, switch to false if `not_essential: true`
+			      task_def.merge!({ Essential: false }) if task['not_essential']
+			
+			      # add docker volumes
+			      if task.key?('mounts')
+			        task['mounts'].each do |mount|
+			          if mount.is_a? String 
+			            parts = mount.split(':',2)
+			            mount_points << { ContainerPath: FnSub(parts[0]), SourceVolume: FnSub(parts[1]), ReadOnly: (parts[2] == 'ro' ? true : false) }
+			          else
+			            mount_points << mount
+			          end
+			        end
+			        task_def.merge!({MountPoints: mount_points })
+			      end
+			
+			      # volumes from
+			      if task.key?('volumes_from')
+			        task['volumes_from'].each do |source_container|
+			        task_def.merge!({ VolumesFrom: [ SourceContainer: source_container ] })
+			        end
+			      end
+			
+			      # add port
+			      if task.key?('ports')
+			        port_mapppings = []
+			        task['ports'].each do |port|
+			          port_array = port.to_s.split(":").map(&:to_i)
+			          mapping = {}
+			          mapping.merge!(ContainerPort: port_array[0])
+			          mapping.merge!(HostPort: port_array[1]) if port_array.length == 2
+			          port_mapppings << mapping
+			        end
+			        task_def.merge!({PortMappings: port_mapppings})
+			      end
+			
+			      task_def.merge!({EntryPoint: task['entrypoint'] }) if task.key?('entrypoint')
+			      task_def.merge!({Command: task['command'] }) if task.key?('command')
+			      task_def.merge!({HealthCheck: task['healthcheck'] }) if task.key?('healthcheck')
+			      task_def.merge!({WorkingDirectory: task['working_dir'] }) if task.key?('working_dir')
+			
+			      if task.key?('secrets')
+			
+			        if task['secrets'].key?('ssm')
+			          secrets.push *task['secrets']['ssm'].map {|k,v| { Name: k, ValueFrom: v.is_a?(String) && v.start_with?('/') ? FnSub("arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter#{v}") : v }}
+			          resources = task['secrets']['ssm'].map {|k,v| v.is_a?(String) && v.start_with?('/') ? FnSub("arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter#{v}") : v }
+			          secrets_policy.push iam_policy_allow('ssm-secrets','ssm:GetParameters', resources)
+			          task['secrets'].reject! { |k| k == 'ssm' }
+			        end
+			
+			        if task['secrets'].key?('secretsmanager')
+			          secrets.push *task['secrets']['secretsmanager'].map {|k,v| { Name: k, ValueFrom: v.is_a?(String) && v.start_with?('/') ? FnSub("arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:#{v}") : v }}
+			          resources = task['secrets']['secretsmanager'].map {|k,v| v.is_a?(String) && v.start_with?('/') ? FnSub("arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:#{v}-*") : v }
+			          secrets_policy.push iam_policy_allow('secretsmanager','secretsmanager:GetSecretValue', resources)
+			          task['secrets'].reject! { |k| k == 'secretsmanager' }
+			        end
+			        
+			        unless task['secrets'].empty?
+			          secrets.push *task['secrets'].map {|k,v| { Name: k, ValueFrom: v.is_a?(String) && v.start_with?('/') ? FnSub("arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter#{v}") : v }}
+			          resources = task['secrets'].map {|k,v| v.is_a?(String) && v.start_with?('/') ? FnSub("arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter#{v}") : v }
+			          secrets_policy.push iam_policy_allow('ssm-secrets','ssm:GetParameters', resources)
+			        end
+			
+			        if secrets.any?
+			          task_def.merge!({Secrets: secrets})
+			        end
+			
+			      end
+			
+			      definitions << task_def
+			
+			    end
+			
+			    # add docker volumes
+			    volumes = external_parameters.fetch(:volumes, [])
+			    volumes.each do |volume|
+			      if volume.is_a? String 
+			        parts = volume.split(':')
+			        object = { Name: FnSub(parts[0])}
+			        object.merge!({ Host: { SourcePath: FnSub(parts[1]) }}) if parts[1]
+			      else
+			        object = volume
+			      end
+			      task_volumes << object
+			    end
+			
+			
+			    iam_policies = external_parameters.fetch(:iam_policies, {})
+			    unless iam_policies.empty?
+			
+			      policies = []
+			      iam_policies.each do |name,policy|
+			        policies << iam_policy_allow(name,policy['action'],policy['resource'] || '*')
+			      end
+			
+			      IAM_Role('TaskRole') do
+			        AssumeRolePolicyDocument ({
+			          Statement: [
+			            {
+			              Effect: 'Allow',
+			              Principal: { Service: [ 'ecs-tasks.amazonaws.com' ] },
+			              Action: [ 'sts:AssumeRole' ]
+			            },
+			            {
+			              Effect: 'Allow',
+			              Principal: { Service: [ 'ssm.amazonaws.com' ] },
+			              Action: [ 'sts:AssumeRole' ]
+			            }
+			          ]
+			        })
+			        Path '/'
+			        Policies(policies)
+			      end
+			
+			      IAM_Role('ExecutionRole') do
+			        AssumeRolePolicyDocument service_role_assume_policy(['ecs-tasks', 'ssm'])
+			        Path '/'
+			        ManagedPolicyArns ["arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"]
+			        if secrets_policy.any?
+			          Policies secrets_policy
+			        end
+			      end
+			    end
+			
+			    task_type = external_parameters.fetch(:task_type, 'EC2')
+			    ECS_TaskDefinition('Task') do
+			      ContainerDefinitions definitions
+			      RequiresCompatibilities [task_type]
+			
+			      if external_parameters[:cpu]
+			        Cpu external_parameters[:cpu]
+			      end
+			
+			      if external_parameters[:memory]
+			        Memory external_parameters[:memory]
+			      end
+			
+			      if external_parameters[:network_mode]
+			        NetworkMode external_parameters[:network_mode]
+			      end
+			
+			      if task_volumes.any?
+			        Volumes task_volumes
+			      end
+			
+			      unless iam_policies.empty?
+			        TaskRoleArn Ref('TaskRole')
+			        ExecutionRoleArn Ref('ExecutionRole')
+			      end
+			
+			      Tags task_tags
+			
+			    end
+			
+			    Output("EcsTaskArn") {
+			      Value(Ref('Task'))
+			      Export FnSub("${EnvironmentName}-#{export}-EcsTaskArn")
+			    }
+			
+			  
+
+
+
+    # cfhighlander generated lambda functions
+    
+
+    # cfhighlander generated parameters
+
+    Parameter('EnvironmentName') do
+      Type 'String'
+      Default 'dev'
+      NoEcho false
+    end
+
+    Parameter('EnvironmentType') do
+      Type 'String'
+      Default 'development'
+      NoEcho false
+      AllowedValues ["development", "production"]
+    end
+
+    Parameter('DnsDomain') do
+      Type 'String'
+      Default '{"Ref"=>"DnsDomain"}'
+      NoEcho false
+    end
+
+
+
+    Description 'ecs-task - greeterserviceTask - latest'
+
+    Output('CfTemplateUrl') {
+        Value("/ecs-task.compiled.yaml")
+    }
+    Output('CfTemplateVersion') {
+        Value("latest")
+    }
+end

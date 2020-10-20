@@ -1,0 +1,69 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Resources:
+  EcsCluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName:
+        Fn::Sub: "${EnvironmentName}-services"
+      ClusterSettings:
+      - Name: containerInsights
+        Value:
+          Ref: ContainerInsights
+      Tags:
+      - Key: Name
+        Value:
+          Fn::Sub: "${EnvironmentName}-ecs"
+      - Key: Environment
+        Value:
+          Ref: EnvironmentName
+      - Key: EnvironmentType
+        Value:
+          Ref: EnvironmentType
+Outputs:
+  EcsCluster:
+    Value:
+      Ref: EcsCluster
+    Export:
+      Name:
+        Fn::Sub: "${EnvironmentName}-ecs-EcsCluster"
+  EcsClusterArn:
+    Value:
+      Fn::GetAtt:
+      - EcsCluster
+      - Arn
+    Export:
+      Name:
+        Fn::Sub: "${EnvironmentName}-ecs-EcsClusterArn"
+  CfTemplateUrl:
+    Value: "/ecs-v2.compiled.yaml"
+  CfTemplateVersion:
+    Value: latest
+Parameters:
+  EnvironmentName:
+    Type: String
+    Default: dev
+    NoEcho: false
+  EnvironmentType:
+    Type: String
+    Default: development
+    NoEcho: false
+    AllowedValues:
+    - development
+    - production
+  VPCId:
+    Type: AWS::EC2::VPC::Id
+    Default: ''
+    NoEcho: false
+  ContainerInsights:
+    Type: String
+    Default: disabled
+    NoEcho: false
+    AllowedValues:
+    - enabled
+    - disabled
+  AvailabilityZones:
+    Type: String
+    Default: '3'
+    NoEcho: false
+Description: ecs-v2 - latest
