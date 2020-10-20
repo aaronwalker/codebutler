@@ -1,4 +1,5 @@
-FROM jenkins4eval/jenkinsfile-runner:maven
+# FROM jenkins4eval/jenkinsfile-runner:maven
+FROM jenkins/jenkinsfile-runner:adoptopenjdk-11-hotspot
 
 # Installing basic packages
 RUN apt-get update && \
@@ -6,14 +7,14 @@ RUN apt-get update && \
   rm -rf /var/lib/apt/lists/* && \
   rm -rf /tmp/*
 
-RUN curl -s "https://get.sdkman.io" | bash
+# RUN curl -s "https://get.sdkman.io" | bash
 
-RUN bash -c "source $HOME/.sdkman/bin/sdkman-init.sh && \
-    yes | sdk install java && \
-    rm -rf $HOME/.sdkman/archives/* && \
-    rm -rf $HOME/.sdkman/tmp/*"
+# RUN bash -c "source $HOME/.sdkman/bin/sdkman-init.sh && \
+#     yes | sdk install java && \
+#     rm -rf $HOME/.sdkman/archives/* && \
+#     rm -rf $HOME/.sdkman/tmp/*"
 
-RUN echo "pipeline-model-definition\ndocker-workflow" > /usr/share/jenkins/ref/plugins.txt
+RUN echo "workflow-aggregator:latest\npipeline-model-definition\ndocker-workflow" > /usr/share/jenkins/ref/plugins.txt
 RUN cd /app/jenkins && jar -cvf jenkins.war .
-RUN curl -L https://github.com/jenkinsci/plugin-installation-manager-tool/releases/download/2.1.0/jenkins-plugin-manager-2.1.0.jar > /app/bin/jenkins-plugin-manager.jar
+RUN curl -sL https://github.com/jenkinsci/plugin-installation-manager-tool/releases/download/2.1.0/jenkins-plugin-manager-2.1.0.jar > /app/bin/jenkins-plugin-manager.jar
 RUN java -jar /app/bin/jenkins-plugin-manager.jar --war /app/jenkins/jenkins.war --plugin-file /usr/share/jenkins/ref/plugins.txt && rm /app/jenkins/jenkins.war

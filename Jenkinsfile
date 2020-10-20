@@ -1,9 +1,6 @@
 // @Library('github.com/base2Services/ciinabox-pipelines') _
 pipeline {
   agent any
-  environment {
-    JAVA_HOME='/root/.sdkman/candidates/java/current'
-  }
   stages {
     stage('agent') {
       agent {
