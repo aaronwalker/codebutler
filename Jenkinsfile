@@ -20,15 +20,15 @@ pipeline {
     stage('Package') {
       steps {
         echo 'build and push docker to ecr'
-        // ecr accountId: env.AWS_ACCOUNT,
-        //   region: env.AWS_REGION,
-        //   image: env.IMAGE_NAME,
-        //   scanOnPush: true
+        ecr accountId: env.AWS_ACCOUNT,
+          region: env.AWS_REGION,
+          image: env.IMAGE_NAME,
+          scanOnPush: true
         dockerBuild repo: "${env.AWS_ACCOUNT}.dkr.ecr.${env.AWS_REGION}.amazonaws.com",
           image: env.IMAGE_NAME,
           tags: ["${env.BUILD_NUMBER}"],
           dockerfile: 'src/main/docker/Dockerfile.jvm',
-          push: false,
+          push: true,
           cleanup: true
       }
     }
