@@ -13,7 +13,7 @@ RUN bash -c "source $HOME/.sdkman/bin/sdkman-init.sh && \
     rm -rf $HOME/.sdkman/archives/* && \
     rm -rf $HOME/.sdkman/tmp/*"
 
-RUN echo "docker-workflow" > /usr/share/jenkins/ref/plugins.txt
+RUN echo "pipeline-model-definition\ndocker-workflow" > /usr/share/jenkins/ref/plugins.txt
 RUN cd /app/jenkins && jar -cvf jenkins.war .
 RUN curl -L https://github.com/jenkinsci/plugin-installation-manager-tool/releases/download/2.1.0/jenkins-plugin-manager-2.1.0.jar > /app/bin/jenkins-plugin-manager.jar
 RUN java -jar /app/bin/jenkins-plugin-manager.jar --war /app/jenkins/jenkins.war --plugin-file /usr/share/jenkins/ref/plugins.txt && rm /app/jenkins/jenkins.war

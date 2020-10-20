@@ -5,9 +5,19 @@ pipeline {
     JAVA_HOME='/root/.sdkman/candidates/java/current'
   }
   stages {
+    stage('agent') {
+      agent {
+        docker {
+          image 'theonestack/cfhighlander'
+        }
+      }
+      steps {
+        echo "cfhighlander -v"
+      }
+    }
     stage('Build') {
       steps {
-        sh './mvnw clean install -DskipTests'
+        sh './mvnw clean install'
       }
     }
     stage('Package') {
