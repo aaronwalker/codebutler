@@ -7,14 +7,7 @@ RUN apt-get update && \
   rm -rf /var/lib/apt/lists/* && \
   rm -rf /tmp/*
 
-# RUN curl -s "https://get.sdkman.io" | bash
-
-# RUN bash -c "source $HOME/.sdkman/bin/sdkman-init.sh && \
-#     yes | sdk install java && \
-#     rm -rf $HOME/.sdkman/archives/* && \
-#     rm -rf $HOME/.sdkman/tmp/*"
-
-RUN echo "workflow-aggregator:latest\npipeline-model-definition\ndocker-workflow" > /usr/share/jenkins/ref/plugins.txt
 RUN cd /app/jenkins && jar -cvf jenkins.war .
 RUN curl -sL https://github.com/jenkinsci/plugin-installation-manager-tool/releases/download/2.1.0/jenkins-plugin-manager-2.1.0.jar > /app/bin/jenkins-plugin-manager.jar
+RUN echo "workflow-aggregator:latest\npipeline-model-definition\ndocker-workflow\ngithub-branch-source" > /usr/share/jenkins/ref/plugins.txt
 RUN java -jar /app/bin/jenkins-plugin-manager.jar --war /app/jenkins/jenkins.war --plugin-file /usr/share/jenkins/ref/plugins.txt && rm /app/jenkins/jenkins.war

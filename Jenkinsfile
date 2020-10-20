@@ -1,18 +1,18 @@
-// @Library('github.com/base2Services/ciinabox-pipelines') _
+// @Library(['github.com/base2Services/ciinabox-pipelines']) _
+library identifier: 'ciinabox@master',
+    retriever: modernSCM([
+      $class: 'GitSCMSource',
+      remote: 'https://github.com/base2Services/ciinabox-pipelines.git'
+    ])
 pipeline {
   agent any
   stages {
-    stage('agent') {
+    stage('Build') {
       agent {
         docker {
-          image 'theonestack/cfhighlander'
+          image 'adoptopenjdk:11-jdk-hotspot'
         }
       }
-      steps {
-        echo "cfhighlander -v"
-      }
-    }
-    stage('Build') {
       steps {
         sh './mvnw clean install'
       }
