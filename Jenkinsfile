@@ -14,7 +14,7 @@ pipeline {
     stage('Build') {
       steps {
         script {
-            def pr = gitopsPRManager.createPullRequest("my pr", "#my pr", "dummy", "master", []);
+            def pr = gitopsPRManager.createPullRequest(title: "my pr", body: "# my pr\n\naaaaa", head: "dummy", base: "master", labels: []);
             echo "create PR-${pr.number}: ${pr.url}"
         }
       }
