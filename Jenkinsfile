@@ -13,6 +13,9 @@ pipeline {
   stages {
     stage('Build') {
       steps {
+        script {
+            echo "${gitopsPRManager}"
+        }
         sh './mvnw clean install'
       }
     }
