@@ -14,32 +14,9 @@ pipeline {
     stage('Build') {
       steps {
         script {
-            echo "${gitopsPRManager}"
+            def pr = gitopsPRManager.createPullRequest("my pr", "#my pr", "dummy", "master" null);
+            echo "create PR-${pr.number}: ${pr.url}"
         }
-        sh './mvnw clean install'
-      }
-    }
-    stage('Package') {
-      steps {
-        echo 'build and push docker to ecr'
-        dockerBuild repo: "${env.AWS_ACCOUNT}.dkr.ecr.${env.AWS_REGION}.amazonaws.com",
-          image: env.IMAGE_NAME,
-          tags: ["${env.BUILD_NUMBER}"],
-          dockerfile: 'src/main/docker/Dockerfile.jvm',
-          push: false,
-          cleanup: true
-      }
-    }
-    stage('Deploy') {
-      agent {
-        docker {
-          image 'theonestack/cfhighlander'
-        }
-      }
-      steps {
-        echo "cloudformation deploy using IAM role"
-        echo "cfcompile greeter -q --validate"
-        echo "cfpublish greeter@${env.BUILD_NUMBER}"
       }
     }
   }
