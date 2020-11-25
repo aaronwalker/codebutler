@@ -14,6 +14,7 @@ pipeline {
     stage('Build') {
       steps {
         script {
+            sh 'printenv | sort'
             withPRFlowRequest([
                 owner: 'aaronwalker',
                 repo: 'codebutler',
