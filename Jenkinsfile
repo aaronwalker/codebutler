@@ -19,6 +19,7 @@ pipeline {
                 owner: 'aaronwalker',
                 repo: 'codebutler',
                 branch: 'temp',
+                base: 'master',
                 title: 'feat(api): My Cool New Feature',
                 body: "# Feature Details:\n\nLook mum I've got markdown\n```yaml\na: b\nc: d\n```",
                 labels: ['feature', 'release']
