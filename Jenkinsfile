@@ -17,7 +17,7 @@ pipeline {
             sh 'printenv | sort'
             script {
                 echo "creds:${gitopsPRManager.credentialId}"
-                echo "PR:${gitopsPRManager.currentPrFlowRequest.number}"
+                echo "PR:${gitopsPRManager.currentPrFlowRequest}"
             }
         }
       }
