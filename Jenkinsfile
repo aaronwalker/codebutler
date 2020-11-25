@@ -15,16 +15,8 @@ pipeline {
       steps {
         script {
             sh 'printenv | sort'
-            withPRFlowRequest([
-                owner: 'aaronwalker',
-                repo: 'jenkins-mono-repo-example',
-                branch: 'temp',
-                base: 'master',
-                title: 'feat(api): My Cool New Feature',
-                body: "# Feature Details:\n\nLook mum I've got markdown\n```yaml\na: b\nc: d\n```",
-                labels: ['feature', 'release']
-            ]) {
-                sh "echo 'test' >> README.md"
+            script {
+                echo "creds:${gitopsPRManager.credentialId}"
             }
         }
       }
