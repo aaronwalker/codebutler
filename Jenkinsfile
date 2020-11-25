@@ -17,7 +17,7 @@ pipeline {
             sh 'printenv | sort'
             withPRFlowRequest([
                 owner: 'aaronwalker',
-                repo: 'codebutler',
+                repo: 'jenkins-mono-repo-example',
                 branch: 'temp',
                 base: 'master',
                 title: 'feat(api): My Cool New Feature',
