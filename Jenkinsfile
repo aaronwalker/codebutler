@@ -14,8 +14,16 @@ pipeline {
     stage('Build') {
       steps {
         script {
-            def pr = gitopsPRManager.createPullRequest("my pr", "# my pr\n\naaaaa", "dummy", "master", []);
-            echo "create PR-${pr.number}: ${pr.url}"
+            withPRFlowRequest([
+                owner: 'base2services',
+                repo: 'codebutler',
+                branch: 'temp',
+                title: 'feat(api): My Cool New Feature',
+                body: "# Feature Details:\n\nLook mum I've got markdown\n```yaml\na: b\nc: d\n```",
+                labels: ['feature', 'release']
+            ]) {
+                sh "echo test >? README.md"
+            }
         }
       }
     }
